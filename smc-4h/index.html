@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1220"><title>SMC Benzer Grafik 4H</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#131e30;--line:#26364e;--muted:#9aabc2;--green:#34d399;--blue:#60a5fa;--amber:#fbbf24}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#edf4ff;font:15px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}main{max-width:1050px;margin:auto;padding:20px 14px 44px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}h1{font-size:clamp(22px,4vw,31px);margin:0}.sub{color:var(--muted);line-height:1.55;margin:8px 0 18px}
+button{background:#2563eb;color:white;border:0;border-radius:11px;padding:13px 18px;font-weight:750;font-size:15px;cursor:pointer}button:disabled{opacity:.5}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:15px;margin:13px 0}.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:9px}.rule{background:#0e1828;border:1px solid var(--line);border-radius:11px;padding:11px}.rule b{display:block;margin-bottom:5px}.rule small{color:var(--muted);line-height:1.4}
+.status{color:var(--muted);font-size:13px;margin-top:12px}.bar{height:7px;background:#24334a;border-radius:9px;overflow:hidden;margin-top:8px}.bar i{display:block;height:100%;width:0;background:var(--blue)}
+.stats{display:flex;gap:20px;flex-wrap:wrap;margin-top:13px}.stats strong{font-size:21px;display:block}.stats small{color:var(--muted)}
+.tablewrap{overflow:auto}table{width:100%;min-width:650px;border-collapse:collapse}th,td{text-align:left;padding:11px 9px;border-bottom:1px solid var(--line);white-space:nowrap}th{font-size:11px;color:var(--muted);letter-spacing:.04em}td a{color:#93c5fd;text-decoration:none;font-weight:750}.score{color:var(--green);font-weight:800}.tag{display:inline-block;background:#123c32;color:#6ee7b7;border-radius:7px;padding:4px 7px;font-size:11px;margin:2px}.empty{text-align:center;color:var(--muted);padding:25px}.note{font-size:12px;color:var(--muted);line-height:1.6}
+@media(max-width:600px){main{padding:15px 11px 35px}.panel{padding:12px}}
+</style></head><body><main>
+<header><div><h1>SMC Benzer Grafik · 4H</h1><div class="sub">Binance USDT-M vadeli · LONG · Mum ve fiyat hareketi benzerliği</div></div><button id="scan">4 saatlik tara</button></header>
+<p class="sub">Referans model: Likidite süpürme → Demand Zone → yukarı yönlü BOS → BSL hedefi. İndikatör filtresi kullanılmaz; yapısal benzerlik puanlanır.</p>
+<section class="panel"><div class="rules">
+<div class="rule"><b>1 · Liquidity Sweep</b><small>Önceki yerel dip altına fitil atıp dip seviyesinin üzerinde kapanış</small></div>
+<div class="rule"><b>2 · Demand Zone</b><small>Süpürme sonrası son düşüş mumundan oluşan talep alanına dönüş/tepki</small></div>
+<div class="rule"><b>3 · Bullish BOS</b><small>Önceki yerel tepe üzerinde 4 saatlik mum kapanışı</small></div>
+<div class="rule"><b>4 · BSL hedefi</b><small>Fiyatın üzerinde takip edilebilecek likidite tepesi</small></div>
+</div><div class="status" id="status">Başlamak için “4 saatlik tara” butonuna dokun.</div><div class="bar"><i id="progress"></i></div><div class="stats"><div><strong id="scanned">0</strong><small>Taranan parite</small></div><div><strong id="found">0</strong><small>Model adayı</small></div><div><strong id="updated">—</strong><small>Son tarama</small></div></div></section>
+<section class="panel"><b>Referans modele en çok benzeyen 10 coin</b><div class="tablewrap"><table><thead><tr><th>#</th><th>Parite</th><th>Benzerlik</th><th>Model aşaması</th><th>Son fiyat</th><th>Grafik</th></tr></thead><tbody id="results"><tr><td colspan="6" class="empty">Henüz tarama yapılmadı.</td></tr></tbody></table></div></section>
+<p class="note">Puan, otomatik mum/yapı tespitine dayalı yaklaşık benzerlik puanıdır; görsel yapay zekâ ile piksel eşleştirmesi değildir. Yalnızca kapanmış 4 saatlik mumlar kullanılır. Binance herkese açık piyasa verileri kullanılır; API anahtarı gerekmez. API erişimi tarayıcı/ağ tarafından engellenirse tarama çalışmayabilir. Bu araç al-sat tavsiyesi değildir; sinyal mutlaka grafikte kontrol edilmelidir.</p>
+</main><script>
+const $=id=>document.getElementById(id);
+const api='https://fapi.binance.com/fapi/v1/';
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function get(url){const r=await fetch(url);if(!r.ok)throw Error('Binance API '+r.status);return r.json()}
+function pivotLow(a,i,n=3){for(let j=i-n;j<=i+n;j++)if(j!==i&&a[j][3]<=a[i][3])return false;return true}
+function pivotHigh(a,i,n=3){for(let j=i-n;j<=i+n;j++)if(j!==i&&a[j][2]>=a[i][2])return false;return true}
+function analyze(raw){
+ const a=raw.slice(0,-1).map(x=>({o:+x[1],h:+x[2],l:+x[3],c:+x[4],v:+x[5]}));
+ if(a.length<100)return null;
+ const lows=[],highs=[];for(let i=4;i<a.length-4;i++){if(pivotLow(a,i))lows.push(i);if(pivotHigh(a,i))highs.push(i)}
+ const start=Math.max(10,a.length-42);let best=null;
+ for(const si of lows.filter(i=>i>=start&&i<a.length-12)){
+  const sweep=a[si], prior=lows.filter(i=>i<si&&i>=si-35).map(i=>a[i].l);
+  if(!prior.length)continue;const ref=Math.min(...prior);
+  if(!(sweep.l<ref&&sweep.c>ref))continue;
+  let bos=-1,bosLevel=0;
+  for(let j=si+2;j<a.length-3;j++){
+   const candidates=highs.filter(i=>i>si-18&&i<j&&i>=si-2);
+   if(!candidates.length)continue;
+   const hi=candidates[candidates.length-1],level=a[hi].h;
+   if(a[j].c>level){bos=j;bosLevel=level;break}
+  }
+  if(bos<0)continue;
+  let demand=-1;for(let j=bos-1;j>si;j--){if(a[j].c<a[j].o){demand=j;break}}
+  if(demand<0)continue;
+  const zoneTop=a[demand].o,zoneBottom=a[demand].l;
+  let retest=false,reaction=false;
+  for(let j=demand+1;j<a.length;j++){if(a[j].l<=zoneTop&&a[j].h>=zoneBottom){retest=true;if(a[j].c>a[j].o&&a[j].c>zoneTop)reaction=true}}
+  const last=a[a.length-1],aboveZone=last.c>zoneTop;
+  const target=highs.filter(i=>i>bos&&a[i].h>last.c).map(i=>a[i].h).sort((x,y)=>x-y)[0]||highs.filter(i=>i<bos&&a[i].h>last.c).map(i=>a[i].h).sort((x,y)=>x-y)[0];
+  let score=34+(retest?18:0)+(reaction?14:0)+(aboveZone?10:0)+(target?12:0);
+  const age=a.length-1-bos;if(age<=6)score+=12;else if(age<=12)score+=6;else score-=Math.min(12,age-12);
+  if(last.c<zoneBottom)score-=25;
+  score=Math.max(0,Math.min(100,score));
+  const stages=['Sweep','Demand','BOS'];if(retest)stages.push('Retest');if(target)stages.push('BSL');
+  const item={score,stages:stages.join(' · '),price:last.c,zoneTop,zoneBottom,bosAge:age};
+  if(!best||item.score>best.score)best=item;
+ }
+ return best&&best.score>=35?best:null;
+}
+async function mapLimit(items,limit,fn){let next=0,done=0;const out=[];async function worker(){while(true){const i=next++;if(i>=items.length)return;try{out[i]=await fn(items[i])}catch(e){out[i]=null}done++;if(done%5===0||done===items.length){$('scanned').textContent=done;$('progress').style.width=(done/items.length*100)+'%';$('status').textContent='Taranıyor: '+done+' / '+items.length+' parite'}}}await Promise.all(Array.from({length:limit},worker));return out}
+function fmt(n){return Number(n).toLocaleString('en-US',{maximumFractionDigits:8})}
+async function scan(){const b=$('scan');b.disabled=true;$('results').innerHTML='<tr><td colspan="6" class="empty">Tarama sürüyor…</td></tr>';$('progress').style.width='0%';$('scanned').textContent='0';$('found').textContent='0';
+ try{const info=await get(api+'exchangeInfo');const symbols=info.symbols.filter(s=>s.status==='TRADING'&&s.contractType==='PERPETUAL'&&s.quoteAsset==='USDT').map(s=>s.symbol);
+ const all=await mapLimit(symbols,7,async symbol=>{const candles=await get(api+'klines?symbol='+symbol+'&interval=4h&limit=180');const m=analyze(candles);return m?{symbol,...m}:null});
+ const rows=all.filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,10);
+ $('results').innerHTML=rows.length?rows.map((x,i)=>'<tr><td>'+(i+1)+'</td><td><a href="https://www.binance.com/en/futures/'+x.symbol+'" target="_blank" rel="noopener">'+x.symbol+'</a></td><td class="score">'+Math.round(x.score)+'/100</td><td>'+x.stages.split(' · ').map(s=>'<span class="tag">'+s+'</span>').join('')+'</td><td>'+fmt(x.price)+'</td><td><a href="https://www.tradingview.com/chart/?symbol=BINANCE%3A'+x.symbol+'.P" target="_blank" rel="noopener">4H aç ↗</a></td></tr>').join(''):'<tr><td colspan="6" class="empty">Bu taramada yeterli benzerlikte model bulunamadı.</td></tr>';
+ $('found').textContent=rows.length;$('updated').textContent=new Date().toLocaleTimeString('tr-TR');$('status').textContent='Tamamlandı. '+symbols.length+' USDT vadeli parite kontrol edildi.'}
+ catch(e){$('status').textContent='Hata: '+e.message+' — Bağlantıyı kontrol edip tekrar dene.';$('results').innerHTML='<tr><td colspan="6" class="empty">Tarama tamamlanamadı.</td></tr>'}
+ finally{b.disabled=false}}
+$('scan').addEventListener('click',scan);
+</script></body></html>
