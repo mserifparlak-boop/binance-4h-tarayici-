@@ -19,18 +19,17 @@ table{width:100%;border-collapse:collapse;min-width:620px}th,td{text-align:left;
 </style></head>
 <body><main>
 <div class="top"><div><h1>Binance Haftalık + Günlük Stoch RSI Tarayıcı</h1><div class="muted">USDT-M Sürekli Vadeli İşlemler · Haftalık + Günlük</div></div><button id="scan">Taramayı başlat</button></div>
-<p class="sub">Binance USDT-M sürekli vadeli işlem paritelerini tarar. Haftalık K > D ve K yükselişi şartlarına ek olarak günlük Stoch RSI K değeri 20 altında ve aşağı yönlü olan coinleri listeler.</p>
+<p class="sub">Binance USDT-M sürekli vadeli işlem paritelerini tarar. Yalnızca haftalık Stoch RSI K > D ve günlük Stoch RSI K > D olan coinleri listeler.</p>
 <section class="panel"><div class="rules">
 <div class="rule"><b>Haftalık Stoch RSI</b><span>1W zaman dilimi · RSI 14 · Stoch 14 · K 3 · D 3</span></div>
 <div class="rule"><b>Yukarı yönlü kesişim şartı değil</b><span>K, D'nin üzerinde olmalı: K > D</span></div>
-<div class="rule"><b>Haftalık K yükselişi</b><span>Son kapanmış haftanın K değeri, önceki haftanın K değerinden büyük olmalı</span></div>
-<div class="rule"><b>Günlük Stoch RSI K &lt; 20</b><span>Son kapanmış günlük mumun K değeri 20 altında olmalı</span></div>
-<div class="rule"><b>Günlük K aşağı yönlü</b><span>Son kapanmış günlük K, önceki günlük K değerinden düşük olmalı. D çizgisi dikkate alınmaz.</span></div>
+<div class="rule"><b>Haftalık Stoch RSI</b><span>Son kapanmış haftalık mumda K > D olmalı</span></div>
+<div class="rule"><b>Günlük Stoch RSI</b><span>Son kapanmış günlük mumda K > D olmalı</span></div>
 </div><div class="status" id="status">Taramaya başlamak için butona dokun.</div><div class="bar"><i id="progress"></i></div>
 <div class="stats"><div><strong id="scanned">0</strong><small>Taranan parite</small></div><div><strong id="found">0</strong><small>Uygun parite</small></div><div><strong id="updated">—</strong><small>Son tarama</small></div></div></section>
 <section class="panel"><div class="row" style="justify-content:space-between"><b>Koşulları sağlayan coinler</b><span class="muted" id="count">0 sonuç</span></div>
-<div class="tablewrap"><table><thead><tr><th>Parite</th><th>Son fiyat</th><th>Haftalık K</th><th>Haftalık D</th><th>Önceki haftalık K</th><th>Günlük K</th><th>Önceki günlük K</th></tr></thead><tbody id="results"><tr><td colspan="7" class="empty">Henüz tarama yapılmadı.</td></tr></tbody></table></div></section>
-<p class="foot">Hesaplama RSI 14, Stoch 14, K yumuşatma 3, D yumuşatma 3 ayarlarıyla yapılır. Haftalık ve günlük sinyaller yalnızca kapanmış mumlardan hesaplanır; devam eden mumlar hesaba katılmaz. Günlük filtrede yalnızca K değeri kullanılır, D şartı yoktur. Veriler Binance'in herkese açık API uç noktalarından alınır, API anahtarı gerekmez. Bu araç al/sat tavsiyesi değildir.</p>
+<div class="tablewrap"><table><thead><tr><th>Parite</th><th>Son fiyat</th><th>Haftalık K</th><th>Haftalık D</th><th>Günlük K</th><th>Günlük D</th></tr></thead><tbody id="results"><tr><td colspan="7" class="empty">Henüz tarama yapılmadı.</td></tr></tbody></table></div></section>
+<p class="foot">Hesaplama RSI 14, Stoch 14, K yumuşatma 3, D yumuşatma 3 ayarlarıyla yapılır. Haftalık ve günlük şartlar yalnızca kapanmış mumlardan hesaplanır; devam eden mumlar hesaba katılmaz. Veriler Binance'in herkese açık API uç noktalarından alınır, API anahtarı gerekmez. Bu araç al/sat tavsiyesi değildir.</p>
 </main>
 <script>
 const $=id=>document.getElementById(id);
@@ -77,15 +76,15 @@ async function scan(){
    const dailyClosed=daily.slice(0,-1);
    if(weeklyClosed.length<40||dailyClosed.length<40)return;
    const weeklyCloses=weeklyClosed.map(x=>+x[4]),weeklySeries=stochRsiSeries(weeklyCloses),wi=weeklyCloses.length-1;
-   const k=weeklySeries.k[wi],d=weeklySeries.d[wi],previousK=weeklySeries.k[wi-1];
+   const k=weeklySeries.k[wi],d=weeklySeries.d[wi];
    const dailyCloses=dailyClosed.map(x=>+x[4]),dailySeries=stochRsiSeries(dailyCloses),di=dailyCloses.length-1;
-   const dailyK=dailySeries.k[di],previousDailyK=dailySeries.k[di-1];
-   if(k!==null&&d!==null&&previousK!==null&&dailyK!==null&&previousDailyK!==null&&k>d&&k>previousK&&dailyK<20&&dailyK<previousDailyK){
-    found.push({symbol,price:+dailyClosed[di][4],k,d,previousK,dailyK,previousDailyK});
+   const dailyK=dailySeries.k[di],dailyD=dailySeries.d[di];
+   if(k!==null&&d!==null&&dailyK!==null&&dailyD!==null&&k>d&&dailyK>dailyD){
+    found.push({symbol,price:+dailyClosed[di][4],k,d,dailyK,dailyD});
    }
   });
-  found.sort((a,b)=>a.dailyK-b.dailyK);
-  $('results').innerHTML=found.length?found.map(x=>'<tr><td><a href="https://www.binance.com/en/futures/'+x.symbol+'" target="_blank" rel="noopener">'+x.symbol+'</a></td><td class="num">'+fmt(x.price)+'</td><td class="num"><span class="pill">'+x.k.toFixed(2)+'</span></td><td class="num">'+x.d.toFixed(2)+'</td><td class="num">'+x.previousK.toFixed(2)+'</td><td class="num"><span class="pill">'+x.dailyK.toFixed(2)+'</span></td><td class="num">'+x.previousDailyK.toFixed(2)+'</td></tr>').join(''):'<tr><td colspan="6" class="empty">Bu taramada iki haftalık koşulu da sağlayan coin bulunamadı.</td></tr>';
+  found.sort((a,b)=>(b.k-b.d + b.dailyK-b.dailyD)-(a.k-a.d + a.dailyK-a.dailyD));
+  $('results').innerHTML=found.length?found.map(x=>'<tr><td><a href="https://www.binance.com/en/futures/'+x.symbol+'" target="_blank" rel="noopener">'+x.symbol+'</a></td><td class="num">'+fmt(x.price)+'</td><td class="num"><span class="pill">'+x.k.toFixed(2)+'</span></td><td class="num">'+x.d.toFixed(2)+'</td><td class="num"><span class="pill">'+x.dailyK.toFixed(2)+'</span></td><td class="num">'+x.dailyD.toFixed(2)+'</td></tr>').join(''):'<tr><td colspan="6" class="empty">Bu taramada iki haftalık koşulu da sağlayan coin bulunamadı.</td></tr>';
   $('found').textContent=found.length;$('count').textContent=found.length+' sonuç';$('updated').textContent=new Date().toLocaleTimeString('tr-TR');$('status').textContent='Tarama tamamlandı. '+symbols.length+' USDT-M sürekli vadeli parite kontrol edildi.';
  }catch(e){$('status').textContent='Hata: '+e.message+' — Bağlantıyı kontrol edip tekrar deneyin.';$('results').innerHTML='<tr><td colspan="6" class="empty">Tarama tamamlanamadı.</td></tr>'}
  finally{btn.disabled=false}
