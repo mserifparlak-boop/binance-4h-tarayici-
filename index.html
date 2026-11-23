@@ -2,9 +2,9 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#101827"><title>Binance EMA 200 + Stoch RSI Tarayıcı</title>
+<meta name="theme-color" content="#101827"><title>Binance Haftalık Stoch RSI Tarayıcı</title>
 <style>
-:root{color-scheme:dark;--bg:#0b1220;--panel:#131e30;--line:#26364e;--muted:#9aabc2;--green:#34d399;--blue:#60a5fa;--red:#fb7185}
+:root{color-scheme:dark;--bg:#0b1220;--panel:#131e30;--line:#26364e;--muted:#9aabc2;--green:#34d399;--blue:#60a5fa}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:#edf4ff;font:15px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 main{max-width:1050px;margin:auto;padding:22px 16px 48px}.top{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 h1{font-size:clamp(22px,4vw,32px);margin:0}.sub{color:var(--muted);margin:8px 0 20px;line-height:1.5}
@@ -13,27 +13,25 @@ h1{font-size:clamp(22px,4vw,32px);margin:0}.sub{color:var(--muted);margin:8px 0 
 button{background:#2563eb;color:white;border:0;border-radius:10px;padding:12px 18px;font-weight:700;font-size:15px;cursor:pointer}button:disabled{opacity:.5;cursor:wait}
 .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.muted{color:var(--muted)}.status{margin-top:12px;color:var(--muted);font-size:14px}.bar{height:7px;background:#24334a;border-radius:8px;overflow:hidden;margin-top:9px}.bar>i{display:block;height:100%;width:0;background:var(--blue);transition:width .2s}
 .stats{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px}.stats strong{font-size:21px;display:block}.stats small{color:var(--muted)}
-table{width:100%;border-collapse:collapse;min-width:650px}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--line);white-space:nowrap}th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}td a{color:#93c5fd;text-decoration:none;font-weight:700}.num{font-variant-numeric:tabular-nums}.pill{padding:4px 8px;border-radius:8px;background:#123c32;color:#6ee7b7;font-size:12px}
+table{width:100%;border-collapse:collapse;min-width:620px}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--line);white-space:nowrap}th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}td a{color:#93c5fd;text-decoration:none;font-weight:700}.num{font-variant-numeric:tabular-nums}.pill{padding:4px 8px;border-radius:8px;background:#123c32;color:#6ee7b7;font-size:12px}
 .tablewrap{overflow:auto}.empty{padding:28px;text-align:center;color:var(--muted)}.foot{font-size:12px;color:var(--muted);line-height:1.6}
 @media(max-width:600px){main{padding:16px 12px 36px}.panel{padding:13px}}
 </style></head>
 <body><main>
-<div class="top"><div><h1>Binance Vadeli İşlem Tarayıcısı</h1><div class="muted">EMA 200 · 4 Saatlik Stoch RSI · Günlük Stoch RSI</div></div><button id="scan">Taramayı başlat</button></div>
-<p class="sub">Yalnızca Binance USDT-M sürekli vadeli işlem paritelerini tarar. Üç koşulun tamamı aynı anda sağlanmalıdır.</p>
+<div class="top"><div><h1>Binance Haftalık Stoch RSI Tarayıcı</h1><div class="muted">USDT-M Sürekli Vadeli İşlemler · 1 Haftalık</div></div><button id="scan">Taramayı başlat</button></div>
+<p class="sub">Binance USDT-M sürekli vadeli işlem paritelerini tarar. Yalnızca haftalık Stoch RSI'da K > D olan ve K değeri bir önceki haftaya göre yükselen coinler listelenir.</p>
 <section class="panel"><div class="rules">
-<div class="rule"><b>4 saatlik fiyat</b><span>Kapanış fiyatı EMA 200 üzerinde</span></div>
-<div class="rule"><b>4 saatlik Stoch RSI</b><span>%K değeri 25 altında</span></div>
-<div class="rule"><b>Günlük Stoch RSI</b><span>%K değeri 20 altında</span></div>
+<div class="rule"><b>Haftalık Stoch RSI</b><span>1W zaman dilimi · RSI 14 · Stoch 14 · K 3 · D 3</span></div>
+<div class="rule"><b>Yukarı yönlü kesişim şartı değil</b><span>K, D'nin üzerinde olmalı: K > D</span></div>
+<div class="rule"><b>K yükselişi</b><span>Son kapanmış haftanın K değeri, önceki haftanın K değerinden büyük olmalı</span></div>
 </div><div class="status" id="status">Taramaya başlamak için butona dokun.</div><div class="bar"><i id="progress"></i></div>
 <div class="stats"><div><strong id="scanned">0</strong><small>Taranan parite</small></div><div><strong id="found">0</strong><small>Uygun parite</small></div><div><strong id="updated">—</strong><small>Son tarama</small></div></div></section>
 <section class="panel"><div class="row" style="justify-content:space-between"><b>Koşulları sağlayan coinler</b><span class="muted" id="count">0 sonuç</span></div>
-<div class="tablewrap"><table><thead><tr><th>Parite</th><th>Son fiyat</th><th>4s EMA 200</th><th>4s Stoch RSI K</th><th>Günlük Stoch RSI K</th></tr></thead><tbody id="results"><tr><td colspan="5" class="empty">Henüz tarama yapılmadı.</td></tr></tbody></table></div></section>
-<p class="foot">Hesaplama: RSI(14), Stoch RSI(14), %K için 3 mumluk yumuşatma. Yalnızca kapanmış mumlar kullanılır. Veriler Binance'in herkese açık API uç noktalarından alınır; API anahtarı gerekmez. Bu araç al/sat tavsiyesi değildir. Aşırı yük veya API sınırı nedeniyle tarama yarıda kalırsa daha sonra tekrar deneyin.</p>
+<div class="tablewrap"><table><thead><tr><th>Parite</th><th>Son fiyat</th><th>Haftalık K</th><th>Haftalık D</th><th>Önceki K</th><th>K-D farkı</th></tr></thead><tbody id="results"><tr><td colspan="6" class="empty">Henüz tarama yapılmadı.</td></tr></tbody></table></div></section>
+<p class="foot">Hesaplama TradingView varsayılan Stoch RSI ayarlarına göre yapılır: RSI 14, Stoch 14, K yumuşatma 3, D yumuşatma 3. Sinyal yalnızca tamamlanmış haftalık mumlardan hesaplanır; devam eden hafta hesaba katılmaz. Veriler Binance'in herkese açık API uç noktalarından alınır, API anahtarı gerekmez. Bu araç al/sat tavsiyesi değildir.</p>
 </main>
 <script>
 const $=id=>document.getElementById(id);
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-function ema(values,period){const k=2/(period+1);let v=values[0];for(let i=1;i<values.length;i++)v=values[i]*k+v*(1-k);return v}
 function rsiSeries(closes,period=14){
  if(closes.length<=period)return [];
  let gain=0,loss=0;for(let i=1;i<=period;i++){const d=closes[i]-closes[i-1];if(d>0)gain+=d;else loss-=d}
@@ -42,41 +40,49 @@ function rsiSeries(closes,period=14){
  for(let i=period+1;i<closes.length;i++){const d=closes[i]-closes[i-1];ag=(ag*(period-1)+Math.max(d,0))/period;al=(al*(period-1)+Math.max(-d,0))/period;out.push(al===0?100:100-100/(1+ag/al))}
  return out;
 }
-function stochK(closes){
- const r=rsiSeries(closes,14),raw=[];
- for(let i=0;i<r.length;i++){if(i<27||r[i]===null){raw.push(null);continue}
- const vals=r.slice(i-13,i+1).filter(x=>x!==null),lo=Math.min(...vals),hi=Math.max(...vals);
- raw.push(hi===lo?0:(r[i]-lo)/(hi-lo)*100)}
- const smooth=[];
- for(let i=0;i<raw.length;i++){if(i<2||raw.slice(i-2,i+1).some(x=>x===null))smooth.push(null);else smooth.push((raw[i]+raw[i-1]+raw[i-2])/3)}
- return smooth.filter(x=>x!==null).at(-1);
+function stochRsiSeries(closes){
+ const r=rsiSeries(closes,14),raw=Array(r.length).fill(null),k=Array(r.length).fill(null),d=Array(r.length).fill(null);
+ for(let i=0;i<r.length;i++){
+  if(i<27||r[i]===null)continue;
+  const vals=r.slice(i-13,i+1);if(vals.some(v=>v===null))continue;
+  const lo=Math.min(...vals),hi=Math.max(...vals);
+  raw[i]=hi===lo?0:(r[i]-lo)/(hi-lo)*100;
+ }
+ for(let i=0;i<raw.length;i++){
+  if(i<2||raw.slice(i-2,i+1).some(v=>v===null))continue;
+  k[i]=(raw[i]+raw[i-1]+raw[i-2])/3;
+ }
+ for(let i=0;i<k.length;i++){
+  if(i<2||k.slice(i-2,i+1).some(v=>v===null))continue;
+  d[i]=(k[i]+k[i-1]+k[i-2])/3;
+ }
+ return {k,d};
 }
 async function json(url){const r=await fetch(url);if(!r.ok)throw new Error('Binance API: '+r.status);return r.json()}
 async function mapLimit(items,limit,fn){let next=0,done=0;const out=[];async function worker(){while(true){const i=next++;if(i>=items.length)return;try{out[i]=await fn(items[i]);}catch(e){out[i]=null}done++;if(done%5===0||done===items.length)progress(done,items.length)}}await Promise.all(Array.from({length:limit},worker));return out}
 function progress(done,total){$('scanned').textContent=done;$('progress').style.width=(done/total*100)+'%';$('status').textContent='Taranıyor: '+done+' / '+total+' parite';}
+function fmt(n){return Number(n).toLocaleString('en-US',{maximumFractionDigits:8})}
 async function scan(){
- const btn=$('scan');btn.disabled=true;$('results').innerHTML='<tr><td colspan="5" class="empty">Tarama sürüyor…</td></tr>';$('scanned').textContent='0';$('found').textContent='0';$('progress').style.width='0%';
+ const btn=$('scan');btn.disabled=true;$('results').innerHTML='<tr><td colspan="6" class="empty">Tarama sürüyor…</td></tr>';$('scanned').textContent='0';$('found').textContent='0';$('progress').style.width='0%';
  try{
   const info=await json('https://fapi.binance.com/fapi/v1/exchangeInfo');
   const symbols=info.symbols.filter(s=>s.status==='TRADING'&&s.contractType==='PERPETUAL'&&s.quoteAsset==='USDT').map(s=>s.symbol);
   const found=[];
   await mapLimit(symbols,8,async symbol=>{
-   const [four,daily]=await Promise.all([
-    json('https://fapi.binance.com/fapi/v1/klines?symbol='+symbol+'&interval=4h&limit=250'),
-    json('https://fapi.binance.com/fapi/v1/klines?symbol='+symbol+'&interval=1d&limit=60')
-   ]);
-   const fourClosed=four.slice(0,-1),dayClosed=daily.slice(0,-1);
-   if(fourClosed.length<205||dayClosed.length<40)return;
-   const close4=fourClosed.map(x=>+x[4]),closeD=dayClosed.map(x=>+x[4]);
-   const e=ema(close4,200),k4=stochK(close4),kd=stochK(closeD),price=close4.at(-1);
-   if(price>e&&k4!==undefined&&kd!==undefined&&k4<25&&kd<20)found.push({symbol,price,e,k4,kd});
+   const weekly=await json('https://fapi.binance.com/fapi/v1/klines?symbol='+symbol+'&interval=1w&limit=100');
+   const closed=weekly.slice(0,-1);
+   if(closed.length<40)return;
+   const closes=closed.map(x=>+x[4]),series=stochRsiSeries(closes),i=closes.length-1;
+   const k=series.k[i],d=series.d[i],previousK=series.k[i-1];
+   if(k!==null&&d!==null&&previousK!==null&&k>d&&k>previousK){
+    found.push({symbol,price:+closed[i][4],k,d,previousK,diff:k-d});
+   }
   });
-  found.sort((a,b)=>a.k4-b.k4);
-  $('results').innerHTML=found.length?found.map(x=>'<tr><td><a href="https://www.binance.com/en/futures/'+x.symbol+'" target="_blank" rel="noopener">'+x.symbol+'</a></td><td class="num">'+fmt(x.price)+'</td><td class="num">'+fmt(x.e)+'</td><td class="num"><span class="pill">'+x.k4.toFixed(2)+'</span></td><td class="num"><span class="pill">'+x.kd.toFixed(2)+'</span></td></tr>').join(''):'<tr><td colspan="5" class="empty">Bu taramada üç koşulu birden sağlayan coin bulunamadı.</td></tr>';
-  $('found').textContent=found.length;$('count').textContent=found.length+' sonuç';$('updated').textContent=new Date().toLocaleTimeString('tr-TR');$('status').textContent='Tarama tamamlandı. '+symbols.length+' parite kontrol edildi.';
- }catch(e){$('status').textContent='Hata: '+e.message+' — Bağlantıyı kontrol edip tekrar deneyin.';$('results').innerHTML='<tr><td colspan="5" class="empty">Tarama tamamlanamadı.</td></tr>'}
+  found.sort((a,b)=>b.diff-a.diff);
+  $('results').innerHTML=found.length?found.map(x=>'<tr><td><a href="https://www.binance.com/en/futures/'+x.symbol+'" target="_blank" rel="noopener">'+x.symbol+'</a></td><td class="num">'+fmt(x.price)+'</td><td class="num"><span class="pill">'+x.k.toFixed(2)+'</span></td><td class="num">'+x.d.toFixed(2)+'</td><td class="num">'+x.previousK.toFixed(2)+'</td><td class="num">'+x.diff.toFixed(2)+'</td></tr>').join(''):'<tr><td colspan="6" class="empty">Bu taramada iki haftalık koşulu da sağlayan coin bulunamadı.</td></tr>';
+  $('found').textContent=found.length;$('count').textContent=found.length+' sonuç';$('updated').textContent=new Date().toLocaleTimeString('tr-TR');$('status').textContent='Tarama tamamlandı. '+symbols.length+' USDT-M sürekli vadeli parite kontrol edildi.';
+ }catch(e){$('status').textContent='Hata: '+e.message+' — Bağlantıyı kontrol edip tekrar deneyin.';$('results').innerHTML='<tr><td colspan="6" class="empty">Tarama tamamlanamadı.</td></tr>'}
  finally{btn.disabled=false}
 }
-function fmt(n){return Number(n).toLocaleString('en-US',{maximumFractionDigits:8})}
 $('scan').addEventListener('click',scan);
 </script></body></html>
