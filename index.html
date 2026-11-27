@@ -59,12 +59,12 @@ a{color:#9fc2ff}footer{font-size:11px;color:#77899f;text-align:center;margin:18p
       <table><thead><tr><th>Coin</th><th>Son fiyat</th><th>Son HL seviyesi</th><th>Dibe uzaklık</th><th>HL tarihi</th><th>Haftalık yapı</th></tr></thead>
       <tbody id="rows"><tr><td colspan="6" class="empty">Henüz tarama yapılmadı.</td></tr></tbody></table>
     </div>
-    <p class="note warning">Bu tarayıcı yalnızca teknik ön eleme yapar; al/sat sinyali veya kâr garantisi vermez. Fiyat son yükselen dip seviyesinin altına inmişse aday listesine alınmaz.</p>
+    <p class="note warning">Bu tarayıcı yalnızca teknik ön eleme yapar; al/sat sinyali veya kâr garantisi vermez. Açık haftalık mumun fitili veya güncel fiyat son yükselen dip seviyesinin altına inmişse aday listesine alınmaz.</p>
   </section>
   <section class="panel note">
     <strong>Tarama mantığı</strong>
     <p>1) Tamamlanmış haftalık mumlarda onaylanmış pivot dip ve tepeler bulunur. 2) Son iki pivot dip ve son iki pivot tepe yükseliyor olmalıdır. 3) Sıralama dip → tepe → daha yüksek dip → daha yüksek tepe şeklinde olmalıdır. 4) Güncel fiyat, son onaylı yükselen dip ile bu dipten en fazla seçilen yüzde kadar yukarıda olmalıdır.</p>
-    <p><strong>Önemli:</strong> Haftalık mum kapanışı beklenir; açık olan mevcut hafta trend yapısının hesaplanmasına katılmaz. Güncel fiyat ise canlı vadeli fiyatıdır. Bu nedenle haftalık mum kapanmadan aday durumu değişebilir.</p>
+    <p><strong>Önemli:</strong> Haftalık mum kapanışı beklenir; açık olan mevcut hafta trend yapısının hesaplanmasına katılmaz. Açık haftalık mumun en düşük seviyesi (fitil) de son yükselen dip ile karşılaştırılır; fitil bu seviyenin altına inerse coin elenir. Güncel fiyat canlı vadeli fiyatıdır. Bu nedenle haftalık mum kapanmadan aday durumu değişebilir.</p>
     <p>Veriler Binance Futures herkese açık piyasa API'sinden alınır. API'ye erişilemiyorsa internet bağlantını veya daha sonra tekrar denemeyi kontrol et.</p>
   </section>
   <footer>Yalnızca araştırma ve eğitim amaçlıdır · Kaldıraçlı işlemler yüksek risk taşır.</footer>
@@ -94,7 +94,9 @@ function analyze(raw,price,left,right,maxDist){
   const l1=lows.at(-2),l2=lows.at(-1),h1=highs.at(-2),h2=highs.at(-1);
   if(!(l2.value>l1.value&&h2.value>h1.value))return null;
   if(!(l1.i<h1.i&&h1.i<l2.i&&l2.i<h2.i))return null;
-  if(price<l2.value)return null;
+  // Acik haftanin fitili de son onayli yukselen dip seviyesinin altina inmemeli.
+  const currentWeekLow=Number(raw.at(-1)[3]);
+  if(currentWeekLow<l2.value||price<l2.value)return null;
   const dist=(price/l2.value-1)*100;
   if(dist>maxDist)return null;
   return {price,hl:l2.value,dist,hlTime:l2.time};
